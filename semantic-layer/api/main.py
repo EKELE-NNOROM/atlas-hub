@@ -2,14 +2,13 @@
 
 from contextlib import asynccontextmanager
 from datetime import datetime
-from enum import Enum
 from typing import Any
 
 import snowflake.connector
 from fastapi import Depends, FastAPI, HTTPException, Query, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 METRIC_QUERIES: dict[str, str] = {
     "arr": """
@@ -49,6 +48,43 @@ METRIC_QUERIES: dict[str, str] = {
     """,
 }
 
+MOCK_METRICS: dict[str, list[dict[str, Any]]] = {
+    "arr": [
+        {"period": "2026-03-01", "value": 11800000.0, "currency": "USD"},
+        {"period": "2026-04-01", "value": 12500000.0, "currency": "USD"},
+        {"period": "2026-05-01", "value": 13100000.0, "currency": "USD"},
+    ],
+    "mrr": [
+        {"period": "2026-03-01", "value": 983333.33, "currency": "USD"},
+        {"period": "2026-04-01", "value": 1041666.67, "currency": "USD"},
+        {"period": "2026-05-01", "value": 1091666.67, "currency": "USD"},
+    ],
+    "pipeline_value": [
+        {"period": "2026-05-28", "value": 4200000.0, "currency": "USD"},
+        {"period": "2026-05-29", "value": 4350000.0, "currency": "USD"},
+        {"period": "2026-05-30", "value": 4500000.0, "currency": "USD"},
+    ],
+    "win_rate": [
+        {"period": "2026-01-01", "value": 0.26, "currency": "USD"},
+        {"period": "2026-04-01", "value": 0.28, "currency": "USD"},
+    ],
+    "dau": [
+        {"period": "2026-05-28", "value": 8420.0, "currency": "USD"},
+        {"period": "2026-05-29", "value": 8610.0, "currency": "USD"},
+        {"period": "2026-05-30", "value": 8780.0, "currency": "USD"},
+    ],
+    "mau": [
+        {"period": "2026-05-28", "value": 42100.0, "currency": "USD"},
+        {"period": "2026-05-29", "value": 42350.0, "currency": "USD"},
+        {"period": "2026-05-30", "value": 42600.0, "currency": "USD"},
+    ],
+    "headcount": [
+        {"period": "2026-03-01", "value": 142.0, "currency": "USD"},
+        {"period": "2026-04-01", "value": 148.0, "currency": "USD"},
+        {"period": "2026-05-01", "value": 155.0, "currency": "USD"},
+    ],
+}
+
 METRIC_SCOPES: dict[str, list[str]] = {
     "arr": ["finance", "executive", "admin"],
     "mrr": ["finance", "executive", "admin"],
@@ -61,19 +97,21 @@ METRIC_SCOPES: dict[str, list[str]] = {
 
 
 class Settings(BaseSettings):
-    snowflake_account: str
-    snowflake_user: str = "SVC_METRICS_API_PROD"
-    snowflake_private_key_path: str
-    snowflake_warehouse: str = "WH_BI_PROD"
-    environment: str = "prod"
-    jwt_secret: str  # Validate tokens from internal IdP
+    model_config = SettingsConfigDict(env_prefix="ATLAS_")
 
-    class Config:
-        env_prefix = "ATLAS_"
+    snowflake_account: str | None = None
+    snowflake_user: str = "SVC_METRICS_API_PROD"
+    snowflake_password: str | None = None
+    snowflake_private_key_path: str | None = None
+    snowflake_warehouse: str = "WH_BI_DEV"
+    environment: str = "dev"
+    jwt_secret: str = "local-dev-secret-change-me"
+    mock_data: bool = False
+    disable_auth: bool = False
 
 
 settings = Settings()
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 class MetricResponse(BaseModel):
@@ -86,32 +124,54 @@ class MetricResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     environment: str
+    mode: str
 
 
 def get_snowflake_connection():
-    from cryptography.hazmat.backends import default_backend
-    from cryptography.hazmat.primitives import serialization
+    if not settings.snowflake_account:
+        raise HTTPException(status_code=503, detail="Snowflake not configured")
 
-    with open(settings.snowflake_private_key_path, "rb") as key_file:
-        pkey = serialization.load_pem_private_key(
-            key_file.read(), password=None, backend=default_backend()
+    connect_kwargs: dict[str, Any] = {
+        "account": settings.snowflake_account,
+        "user": settings.snowflake_user,
+        "warehouse": settings.snowflake_warehouse,
+        "role": "ATLAS_API_SERVICE",
+    }
+
+    if settings.snowflake_private_key_path:
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives import serialization
+
+        with open(settings.snowflake_private_key_path, "rb") as key_file:
+            pkey = serialization.load_pem_private_key(
+                key_file.read(), password=None, backend=default_backend()
+            )
+        pkb = pkey.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
         )
-    pkb = pkey.private_bytes(
-        encoding=serialization.Encoding.DER,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption(),
-    )
-    return snowflake.connector.connect(
-        account=settings.snowflake_account,
-        user=settings.snowflake_user,
-        private_key=pkb,
-        warehouse=settings.snowflake_warehouse,
-        role="ATLAS_API_SERVICE",
-    )
+        connect_kwargs["private_key"] = pkb
+    elif settings.snowflake_password:
+        connect_kwargs["password"] = settings.snowflake_password
+    else:
+        raise HTTPException(status_code=503, detail="Snowflake credentials not configured")
+
+    return snowflake.connector.connect(**connect_kwargs)
 
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)) -> dict:
-    """Validate JWT from Okta/Auth0; decode scopes for RBAC."""
+def verify_token(
+    credentials: HTTPAuthorizationCredentials | None = Security(security),
+) -> dict:
+    if settings.disable_auth:
+        return {
+            "sub": "dev@local",
+            "scopes": ["admin", "finance", "sales", "product", "hr", "executive"],
+        }
+
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="Authorization header required")
+
     import jwt
 
     try:
@@ -133,6 +193,21 @@ def require_scope(metric: str, user: dict) -> None:
         raise HTTPException(status_code=403, detail=f"Insufficient scope for metric: {metric}")
 
 
+def fetch_metric_data(metric_name: str) -> list[dict[str, Any]]:
+    if settings.mock_data:
+        return MOCK_METRICS.get(metric_name, [])
+
+    sql = METRIC_QUERIES[metric_name].format(env=settings.environment.upper())
+    conn = get_snowflake_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql)
+        rows = cur.fetchall()
+        return [{"period": str(r[0]), "value": float(r[1]), "currency": "USD"} for r in rows]
+    finally:
+        conn.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
@@ -148,7 +223,8 @@ app = FastAPI(
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
-    return HealthResponse(status="ok", environment=settings.environment)
+    mode = "mock" if settings.mock_data else "snowflake"
+    return HealthResponse(status="ok", environment=settings.environment, mode=mode)
 
 
 @app.get("/metrics/{metric_name}", response_model=MetricResponse)
@@ -161,16 +237,7 @@ async def get_metric(
         raise HTTPException(status_code=404, detail=f"Unknown metric: {metric_name}")
 
     require_scope(metric_name, user)
-
-    sql = METRIC_QUERIES[metric_name].format(env=settings.environment.upper())
-    conn = get_snowflake_connection()
-    try:
-        cur = conn.cursor()
-        cur.execute(sql)
-        rows = cur.fetchall()
-        data = [{"period": str(r[0]), "value": float(r[1]), "currency": "USD"} for r in rows]
-    finally:
-        conn.close()
+    data = fetch_metric_data(metric_name)
 
     return MetricResponse(
         metric=metric_name,
@@ -180,6 +247,7 @@ async def get_metric(
             "definition_version": "1.0.0",
             "generated_at": datetime.utcnow().isoformat() + "Z",
             "requested_by": user.get("sub"),
+            "source": "mock" if settings.mock_data else "snowflake",
         },
     )
 

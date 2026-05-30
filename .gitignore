@@ -16,6 +16,8 @@ venv/
 *.p8
 .env
 profiles.yml
+docker/secrets/*
+!docker/secrets/.gitkeep
 
 # IDE
 .idea/
