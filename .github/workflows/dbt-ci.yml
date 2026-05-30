@@ -1,0 +1,51 @@
+name: dbt CI
+
+on:
+  pull_request:
+    paths:
+      - 'dbt/**'
+      - '.github/workflows/dbt-ci.yml'
+
+jobs:
+  dbt-validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dbt
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dbt
+        run: pip install dbt-snowflake==1.7.4 sqlfluff-templating-dbt
+
+      - name: Parse project
+        run: dbt parse --profiles-dir .
+
+      - name: Compile models
+        run: dbt compile --profiles-dir .
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_CI_USER }}
+          SNOWFLAKE_PRIVATE_KEY_PATH: /tmp/snowflake_key.p8
+
+      - name: Lint SQL
+        run: pip install sqlfluff==3.0.0 && sqlfluff lint models/
+
+      - name: dbt build (CI target)
+        run: dbt build --select state:modified+ --defer --target ci
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+
+  sql-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Snowflake DDL syntax
+        run: |
+          pip install sqlglot
+          python scripts/validate_sql.py snowflake/

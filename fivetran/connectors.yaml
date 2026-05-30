@@ -1,0 +1,55 @@
+# Fivetran connector configuration reference
+# Configure these connectors in the Fivetran UI or via Fivetran REST API.
+# OAuth credentials are managed in Fivetran — not stored in this repo.
+
+destination:
+  type: snowflake
+  database: RAW_PROD
+  role: ATLAS_TRANSFORMER
+  warehouse: WH_ETL_PROD
+
+connectors:
+  salesforce:
+    service: salesforce
+    schema: SALESFORCE
+    schedule: every_6_hours
+    sync_mode: incremental
+    tables: [account, opportunity, opportunity_history, user]
+
+  hubspot:
+    service: hubspot
+    schema: HUBSPOT
+    schedule: every_6_hours
+    tables: [contact, deal, campaign]
+
+  stripe:
+    service: stripe
+    schema: STRIPE
+    schedule: every_6_hours
+    tables: [subscription, customer, invoice, charge]
+
+  netsuite:
+    service: netsuite_suiteanalytics
+    schema: NETSUITE
+    schedule: daily
+    tables: [transaction, account, currency_rate]
+
+  workday:
+    service: workday
+    schema: WORKDAY
+    schedule: daily
+    tables: [worker, job_requisition]
+
+  zendesk:
+    service: zendesk
+    schema: ZENDESK
+    schedule: every_6_hours
+
+  google_analytics_4:
+    service: google_analytics_4
+    schema: GOOGLE_ANALYTICS
+    schedule: daily
+
+monitoring:
+  webhook_url: https://sns.us-east-1.amazonaws.com/atlas-fivetran-alerts
+  sync_delay_alert_minutes: 120

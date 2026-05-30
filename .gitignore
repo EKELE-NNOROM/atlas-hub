@@ -1,0 +1,32 @@
+# Dependencies
+dbt_packages/
+target/
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+
+# Secrets
+*.pem
+*.p8
+.env
+profiles.yml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+*.egg-info/

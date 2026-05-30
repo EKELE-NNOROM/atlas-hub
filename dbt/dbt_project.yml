@@ -1,0 +1,76 @@
+name: atlas_hub
+version: '1.0.0'
+config-version: 2
+profile: atlas_hub
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  exclude_test_account_ids: ["001TEST000000001", "001TEST000000002"]
+  fiscal_year_start_month: 1
+
+models:
+  atlas_hub:
+    staging:
+      +materialized: view
+      +schema: STG
+      +tags: ["staging"]
+    intermediate:
+      +materialized: table
+      +schema: INT
+      +tags: ["intermediate"]
+    marts:
+      finance:
+        +materialized: table
+        +schema: MART_FINANCE
+        +tags: ["mart", "finance", "tier1"]
+      sales:
+        +materialized: table
+        +schema: MART_SALES
+        +tags: ["mart", "sales", "tier1"]
+      marketing:
+        +materialized: table
+        +schema: MART_MARKETING
+        +tags: ["mart", "marketing", "tier2"]
+      product:
+        +materialized: table
+        +schema: MART_PRODUCT
+        +tags: ["mart", "product", "tier2"]
+      hr:
+        +materialized: table
+        +schema: MART_HR
+        +tags: ["mart", "hr", "tier2"]
+    semantic:
+      +materialized: table
+      +schema: SEMANTIC
+      +tags: ["semantic", "tier1"]
+
+seeds:
+  atlas_hub:
+    +schema: INT
+
+snapshots:
+  atlas_hub:
+    +target_schema: INT
+
+tests:
+  atlas_hub:
+    +store_failures: true
+    +schema: QUALITY
+
+flags:
+  require_generic_test_arguments_property: true
+
+query-comment:
+  comment: "dbt_atlas_hub"
+  append: true

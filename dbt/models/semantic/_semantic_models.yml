@@ -1,0 +1,161 @@
+semantic_models:
+  - name: revenue_metrics
+    model: ref('semantic__revenue_kpis')
+    defaults:
+      agg_time_dimension: revenue_month
+    entities:
+      - name: account
+        type: primary
+        expr: account_id
+    dimensions:
+      - name: revenue_month
+        type: time
+        type_params:
+          time_granularity: month
+      - name: account_id
+        type: categorical
+    measures:
+      - name: mrr
+        agg: sum
+        expr: mrr_usd
+        description: Monthly Recurring Revenue in USD
+      - name: arr
+        agg: sum
+        expr: arr_usd
+        description: Annual Recurring Revenue (MRR x 12 for monthly subs)
+      - name: account_count
+        agg: count_distinct
+        expr: account_id
+
+  - name: sales_metrics
+    model: ref('semantic__sales_kpis')
+    defaults:
+      agg_time_dimension: fiscal_quarter
+    entities:
+      - name: opportunity
+        type: primary
+        expr: opportunity_id
+    dimensions:
+      - name: fiscal_quarter
+        type: time
+        type_params:
+          time_granularity: quarter
+    measures:
+      - name: pipeline_value
+        agg: sum
+        expr: amount_usd
+      - name: weighted_pipeline
+        agg: sum
+        expr: weighted_amount_usd
+      - name: win_rate
+        agg: average
+        expr: win_rate
+
+  - name: product_metrics
+    model: ref('semantic__product_kpis')
+    defaults:
+      agg_time_dimension: activity_date
+    dimensions:
+      - name: activity_date
+        type: time
+        type_params:
+          time_granularity: day
+    measures:
+      - name: dau
+        agg: sum
+        expr: dau
+      - name: mau
+        agg: sum
+        expr: mau
+
+metrics:
+  - name: arr
+    label: Annual Recurring Revenue
+    type: simple
+    type_params:
+      measure: arr
+    filter: |
+      {{ Dimension('account_id__account_id') }} is not null
+
+  - name: mrr
+    label: Monthly Recurring Revenue
+    type: simple
+    type_params:
+      measure: mrr
+
+  - name: pipeline_value
+    label: Open Pipeline Value
+    type: simple
+    type_params:
+      measure: pipeline_value
+
+  - name: win_rate
+    label: Win Rate
+    type: simple
+    type_params:
+      measure: win_rate
+
+  - name: dau
+    label: Daily Active Users
+    type: simple
+    type_params:
+      measure: dau
+
+  - name: mau
+    label: Monthly Active Users
+    type: simple
+    type_params:
+      measure: mau
+
+  - name: cac
+    label: Customer Acquisition Cost
+    type: derived
+    type_params:
+      expr: marketing_spend / new_customers
+      metrics:
+        - name: marketing_spend
+        - name: new_customers
+    description: Total S&M spend divided by new customers acquired
+
+  - name: roas
+    label: Return on Ad Spend
+    type: derived
+    type_params:
+      expr: attributed_revenue / ad_spend
+    description: Attributed revenue divided by advertising spend
+
+  - name: gross_margin_pct
+    label: Gross Margin Percentage
+    type: derived
+    type_params:
+      expr: (revenue - cogs) / nullif(revenue, 0)
+
+  - name: headcount
+    label: Active Headcount
+    type: simple
+    type_params:
+      measure: headcount
+
+  - name: attrition_rate
+    label: Attrition Rate
+    type: derived
+    type_params:
+      expr: terminations / avg_headcount
+
+  - name: time_to_hire_days
+    label: Time to Hire (Days)
+    type: simple
+    type_params:
+      measure: avg_time_to_hire_days
+
+  - name: feature_adoption_pct
+    label: Feature Adoption Rate
+    type: derived
+    type_params:
+      expr: feature_users / mau
+
+  - name: retention_rate
+    label: Cohort Retention Rate
+    type: simple
+    type_params:
+      measure: retention_pct

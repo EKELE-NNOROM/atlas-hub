@@ -1,0 +1,71 @@
+version: 2
+
+sources:
+  - name: salesforce
+    database: "{{ target.database.replace('ANALYTICS', 'RAW') }}"
+    schema: SALESFORCE
+    loader: fivetran
+    freshness:
+      warn_after: {count: 12, period: hour}
+      error_after: {count: 24, period: hour}
+    loaded_at_field: _fivetran_synced
+    tables:
+      - name: account
+        identifier: account
+        columns:
+          - name: id
+            tests: [not_null, unique]
+      - name: opportunity
+        identifier: opportunity
+      - name: user
+        identifier: user
+      - name: opportunity_history
+        identifier: opportunity_history
+
+  - name: stripe
+    database: "{{ target.database.replace('ANALYTICS', 'RAW') }}"
+    schema: STRIPE
+    loader: fivetran
+    freshness:
+      warn_after: {count: 12, period: hour}
+      error_after: {count: 24, period: hour}
+    loaded_at_field: _fivetran_synced
+    tables:
+      - name: subscription
+      - name: customer
+      - name: invoice
+      - name: charge
+
+  - name: hubspot
+    database: "{{ target.database.replace('ANALYTICS', 'RAW') }}"
+    schema: HUBSPOT
+    loader: fivetran
+    tables:
+      - name: contact
+      - name: deal
+      - name: campaign
+
+  - name: netsuite
+    database: "{{ target.database.replace('ANALYTICS', 'RAW') }}"
+    schema: NETSUITE
+    loader: fivetran
+    tables:
+      - name: transaction
+      - name: account
+      - name: currency_rate
+
+  - name: workday
+    database: "{{ target.database.replace('ANALYTICS', 'RAW') }}"
+    schema: WORKDAY
+    loader: fivetran
+    tables:
+      - name: worker
+      - name: job_requisition
+
+  - name: product_events
+    database: "{{ target.database.replace('ANALYTICS', 'RAW') }}"
+    schema: S3_LANDING
+    loader: s3_snowpipe
+    tables:
+      - name: daily_engagement
+        identifier: product_daily_engagement

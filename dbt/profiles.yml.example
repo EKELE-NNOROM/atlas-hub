@@ -1,0 +1,33 @@
+atlas_hub:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      role: ATLAS_TRANSFORMER
+      database: ANALYTICS_DEV
+      warehouse: WH_ETL_DEV
+      schema: PUBLIC
+      authenticator: externalbrowser
+      threads: 8
+    staging:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      role: ATLAS_TRANSFORMER
+      database: ANALYTICS_STAGING
+      warehouse: WH_ETL_STAGING
+      schema: PUBLIC
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+      threads: 16
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: SVC_DBT_PROD
+      role: ATLAS_TRANSFORMER
+      database: ANALYTICS_PROD
+      warehouse: WH_ETL_PROD
+      schema: PUBLIC
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+      threads: 32

@@ -1,0 +1,49 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dbt/**'
+      - 'airflow/**'
+      - 'semantic-layer/**'
+      - 'snowflake/**'
+
+jobs:
+  deploy-dbt:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install dbt-snowflake==1.7.4
+      - name: dbt deploy
+        working-directory: dbt
+        run: dbt build --target prod
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_PRIVATE_KEY_PATH: /tmp/snowflake_key.p8
+
+  deploy-airflow:
+    needs: deploy-dbt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Sync DAGs to MWAA bucket
+        run: aws s3 sync airflow/dags/ s3://atlas-airflow-prod/dags/ --delete
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
