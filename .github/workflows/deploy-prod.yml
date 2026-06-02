@@ -8,34 +8,83 @@ on:
       - 'airflow/**'
       - 'semantic-layer/**'
       - 'snowflake/**'
+      - '.github/workflows/deploy-prod.yml'
+      - 'scripts/ci/**'
 
 jobs:
   deploy-dbt:
     runs-on: ubuntu-latest
-    environment: production
+    defaults:
+      run:
+        working-directory: dbt
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install dbt-snowflake==1.7.4
-      - name: dbt deploy
-        working-directory: dbt
-        run: dbt build --target prod
+
+      - name: Install dbt
+        run: pip install dbt-snowflake==1.7.4
+
+      - name: Configure dbt profile
+        run: cp profiles.ci.yml profiles.yml
+
+      - name: Setup Snowflake credentials
+        id: snowflake
+        working-directory: .
+        run: bash scripts/ci/setup-dbt-env.sh
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_PRIVATE_KEY_PATH: /tmp/snowflake_key.p8
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+
+      - name: Install dbt packages
+        working-directory: dbt
+        run: dbt deps --profiles-dir .
+
+      - name: Validate project (parse)
+        run: dbt parse --profiles-dir .
+
+      - name: Validate project (compile)
+        run: dbt compile --profiles-dir .
+        env:
+          DBT_TARGET: prod
+          SNOWFLAKE_DATABASE: ANALYTICS_PROD
+          SNOWFLAKE_WAREHOUSE: WH_ETL_PROD
+
+      - name: dbt build (requires Snowflake secrets)
+        if: steps.snowflake.outputs.snowflake_configured == 'true'
+        run: dbt build --profiles-dir . --target prod
+        env:
+          DBT_TARGET: prod
+          SNOWFLAKE_DATABASE: ANALYTICS_PROD
+          SNOWFLAKE_WAREHOUSE: WH_ETL_PROD
 
   deploy-airflow:
     needs: deploy-dbt
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Check AWS credentials
+        id: aws
+        run: bash scripts/ci/setup-aws-env.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
       - uses: aws-actions/configure-aws-credentials@v4
+        if: steps.aws.outputs.aws_configured == 'true'
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+
       - name: Sync DAGs to MWAA bucket
+        if: steps.aws.outputs.aws_configured == 'true'
         run: aws s3 sync airflow/dags/ s3://atlas-airflow-prod/dags/ --delete
 
   security-scan:

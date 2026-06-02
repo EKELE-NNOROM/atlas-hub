@@ -5,6 +5,7 @@ on:
     paths:
       - 'dbt/**'
       - '.github/workflows/dbt-ci.yml'
+      - 'scripts/ci/**'
 
 jobs:
   dbt-validate:
@@ -23,23 +24,40 @@ jobs:
       - name: Install dbt
         run: pip install dbt-snowflake==1.7.4 sqlfluff-templating-dbt
 
+      - name: Configure dbt profile
+        run: cp profiles.ci.yml profiles.yml
+
+      - name: Setup Snowflake credentials
+        id: snowflake
+        working-directory: .
+        run: bash scripts/ci/setup-dbt-env.sh
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_CI_USER }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+
+      - name: Install dbt packages
+        run: dbt deps --profiles-dir .
+
       - name: Parse project
         run: dbt parse --profiles-dir .
 
       - name: Compile models
         run: dbt compile --profiles-dir .
         env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_CI_USER }}
-          SNOWFLAKE_PRIVATE_KEY_PATH: /tmp/snowflake_key.p8
+          DBT_TARGET: ci
 
       - name: Lint SQL
         run: pip install sqlfluff==3.0.0 && sqlfluff lint models/
 
-      - name: dbt build (CI target)
-        run: dbt build --select state:modified+ --defer --target ci
+      - name: dbt build (requires Snowflake secrets)
+        if: steps.snowflake.outputs.snowflake_configured == 'true'
+        run: dbt build --profiles-dir . --target ci
         env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          DBT_TARGET: ci
+          SNOWFLAKE_DATABASE: ANALYTICS_DEV
+          SNOWFLAKE_WAREHOUSE: WH_ETL_DEV
 
   sql-validation:
     runs-on: ubuntu-latest

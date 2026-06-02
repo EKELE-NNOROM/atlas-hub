@@ -40,6 +40,12 @@ atlas-hub/
 - GCP project with BigQuery
 - dbt >= 1.7, Python >= 3.11
 
+### Deploy to main (CI)
+
+Pushes to `main` run **dbt validation automatically** — no Snowflake credentials required. The pipeline uses placeholders (`placeholder.us-east-1`, `PLACEHOLDER_DBT_USER`) for `dbt parse` and `dbt compile`.
+
+Add GitHub secrets when ready to run a real `dbt build` against Snowflake. See [dbt/README.md](dbt/README.md).
+
 ### Bootstrap Snowflake
 
 Run the SQL scripts in `snowflake/` as SYSADMIN:
