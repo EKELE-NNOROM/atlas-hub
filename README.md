@@ -58,7 +58,13 @@ See [docs/docker/README.md](docs/docker/README.md) for dbt, Airflow, and Snowfla
 - GCP project with BigQuery
 - dbt >= 1.7, Python >= 3.11
 
-### Bootstrap Snowflake
+### CI (optional)
+
+A lightweight GitHub Action runs **`dbt deps`** + **`dbt parse`** on push — no Snowflake credentials required.
+
+Production deploy (`dbt build`, Airflow sync) is **manual only** via Actions → **Deploy (manual)** once secrets are configured.
+
+You do not need CI for local development or Docker. To disable CI entirely, delete `.github/workflows/`.
 
 Run the SQL scripts in `snowflake/` as SYSADMIN:
 

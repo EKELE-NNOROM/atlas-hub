@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  dbt-validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dbt
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dbt
+        run: pip install dbt-snowflake==1.7.4
+
+      - name: Configure dbt profile
+        run: cp profiles.ci.yml profiles.yml
+
+      - name: Install dbt packages
+        run: dbt deps --profiles-dir .
+
+      - name: Validate project structure (parse)
+        run: dbt parse --profiles-dir .
+
+      # compile/build need a real Snowflake connection — skip until secrets are configured
+      - name: Check for Snowflake secrets
+        id: snowflake
+        working-directory: .
+        run: bash scripts/ci/setup-dbt-env.sh
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+
+      - name: Compile models (requires Snowflake secrets)
+        if: steps.snowflake.outputs.snowflake_configured == 'true'
+        run: dbt compile --profiles-dir .
+        env:
+          DBT_TARGET: ci
+          SNOWFLAKE_DATABASE: ANALYTICS_DEV
+          SNOWFLAKE_WAREHOUSE: WH_ETL_DEV
+
+      - name: Build models (requires Snowflake secrets)
+        if: steps.snowflake.outputs.snowflake_configured == 'true'
+        run: dbt build --profiles-dir . --target ci
+        env:
+          DBT_TARGET: ci
+          SNOWFLAKE_DATABASE: ANALYTICS_DEV
+          SNOWFLAKE_WAREHOUSE: WH_ETL_DEV
+
+  sql-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate Snowflake DDL syntax
+        run: |
+          pip install sqlglot
+          python scripts/validate_sql.py snowflake/

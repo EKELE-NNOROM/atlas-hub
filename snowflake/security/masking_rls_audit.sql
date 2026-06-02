@@ -1,4 +1,6 @@
 -- Data masking, row access policies, and tagging
+-- CI note: excluded from sqlglot validation (Snowflake-specific policy syntax).
+-- Run this script directly in Snowflake when credentials are configured.
 
 -- =============================================================================
 -- TAGS (Governance)
