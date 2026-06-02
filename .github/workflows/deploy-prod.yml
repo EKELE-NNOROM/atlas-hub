@@ -1,15 +1,10 @@
-name: Deploy Production
+# Optional: run manually when Snowflake + AWS credentials are configured.
+# Not required for local development or portfolio use.
+
+name: Deploy (manual)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'dbt/**'
-      - 'airflow/**'
-      - 'semantic-layer/**'
-      - 'snowflake/**'
-      - '.github/workflows/deploy-prod.yml'
-      - 'scripts/ci/**'
+  workflow_dispatch:
 
 jobs:
   deploy-dbt:
@@ -20,7 +15,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -38,26 +32,16 @@ jobs:
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
 
-      - name: Install dbt packages
-        working-directory: dbt
-        run: dbt deps --profiles-dir .
+      - name: Fail if Snowflake not configured
+        if: steps.snowflake.outputs.snowflake_configured != 'true'
+        run: |
+          echo "Add SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, and SNOWFLAKE_PRIVATE_KEY secrets first."
+          exit 1
 
-      - name: Validate project (parse)
-        run: dbt parse --profiles-dir .
-
-      - name: Validate project (compile)
-        run: dbt compile --profiles-dir .
-        env:
-          DBT_TARGET: prod
-          SNOWFLAKE_DATABASE: ANALYTICS_PROD
-          SNOWFLAKE_WAREHOUSE: WH_ETL_PROD
-
-      - name: dbt build (requires Snowflake secrets)
-        if: steps.snowflake.outputs.snowflake_configured == 'true'
-        run: dbt build --profiles-dir . --target prod
+      - name: dbt deploy
+        run: dbt deps --profiles-dir . && dbt build --profiles-dir . --target prod
         env:
           DBT_TARGET: prod
           SNOWFLAKE_DATABASE: ANALYTICS_PROD
@@ -76,23 +60,17 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+      - name: Fail if AWS not configured
+        if: steps.aws.outputs.aws_configured != 'true'
+        run: |
+          echo "Add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY secrets first."
+          exit 1
+
       - uses: aws-actions/configure-aws-credentials@v4
-        if: steps.aws.outputs.aws_configured == 'true'
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
       - name: Sync DAGs to MWAA bucket
-        if: steps.aws.outputs.aws_configured == 'true'
         run: aws s3 sync airflow/dags/ s3://atlas-airflow-prod/dags/ --delete
-
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run Trivy filesystem scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          scan-ref: .

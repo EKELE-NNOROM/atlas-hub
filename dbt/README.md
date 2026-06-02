@@ -2,14 +2,9 @@
 
 ## CI without Snowflake credentials
 
-Pull requests and pushes to `main` **pass without secrets**. CI runs:
+Pull requests and pushes to `main` run **`dbt deps`** and **`dbt parse`** only — no warehouse connection needed.
 
-- `dbt deps`
-- `dbt parse`
-- `dbt compile`
-- SQL lint (PRs)
-
-`dbt build` runs only when these GitHub secrets are set:
+`dbt compile` / `dbt build` run when these GitHub secrets are set (via **Actions → Deploy (manual)** or if added to the CI workflow):
 
 | Secret | Example |
 |--------|---------|

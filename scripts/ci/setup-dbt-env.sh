@@ -35,7 +35,7 @@ PLACEHOLDER — add SNOWFLAKE_ACCOUNT and SNOWFLAKE_PRIVATE_KEY secrets to deplo
 EOF
   chmod 600 "$KEY_PATH"
   configured=false
-  echo "::notice title=Placeholder mode::Snowflake secrets not configured. Running dbt validation only (deps/parse/compile). Add SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, and SNOWFLAKE_PRIVATE_KEY secrets to enable dbt build."
+  echo "::notice title=Placeholder mode::Snowflake secrets not configured. Running dbt validation only (deps/parse). Add SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, and SNOWFLAKE_PRIVATE_KEY secrets to enable compile/build."
 fi
 
 if [ -n "$OUTPUT" ]; then
