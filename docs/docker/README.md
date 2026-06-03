@@ -145,14 +145,27 @@ docker compose down -v
 └─────────────────────────────────────────────────────────┘
 ```
 
+## Run without Docker (Windows / Docker Hub blocked)
+
+If `docker compose build` fails with TLS errors talking to `auth.docker.io` (common with VPN, antivirus HTTPS scanning, or corporate proxy), run the API directly:
+
+```powershell
+.\scripts\run-metrics-api-local.ps1
+```
+
+Open http://localhost:8080/docs — same mock mode as Docker (`ATLAS_MOCK_DATA=true`).
+
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
-| Port 8080 in use | Set `METRICS_API_PORT=8088` in `.env` |
+| `dockerDesktopLinuxEngine` not found | Start **Docker Desktop** and wait until it is Running |
+| `tls: error decoding message` / `bad record MAC` on pull | Network/TLS issue reaching Docker Hub — use `.\scripts\run-metrics-api-local.ps1` or disable VPN/SSL inspection, restart Docker, retry `docker pull python:3.11-slim` |
+| Port 8080 in use | Set `METRICS_API_PORT=8088` in `.env` or `$env:METRICS_API_PORT='8088'` before the local script |
 | dbt auth fails | Verify `SNOWFLAKE_*` vars; use password auth in Docker |
 | Airflow init loops | `docker compose --profile airflow down -v` then retry |
 | Windows line endings | Ensure `.env` uses UTF-8 without BOM |
+| `setup-dbt-env.sh: $'\r': command not found` | CI-only script; on Windows use `cd dbt; dbt parse` instead of bash |
 
 ## What's not in Docker
 

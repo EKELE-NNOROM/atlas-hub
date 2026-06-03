@@ -45,6 +45,12 @@ docker compose up -d --build
 # Metrics API: http://localhost:8080/docs
 ```
 
+If Docker build fails pulling from Docker Hub (`tls: error decoding message` / `bad record MAC`), use native mock mode:
+
+```powershell
+.\scripts\run-metrics-api-local.ps1
+```
+
 See [docs/docker/README.md](docs/docker/README.md) for dbt, Airflow, and Snowflake-connected modes.
 
 ### Option B: Native install
