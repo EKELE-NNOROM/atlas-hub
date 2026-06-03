@@ -1,5 +1,5 @@
 with engagement as (
-    select * from {{ source('product_events', 'daily_engagement') }}
+    select * from {{ atlas_raw('product_events', 'daily_engagement') }}
 ),
 
 daily as (

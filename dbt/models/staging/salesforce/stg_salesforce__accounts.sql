@@ -1,5 +1,5 @@
 with source as (
-    select * from {{ source('salesforce', 'account') }}
+    select * from {{ atlas_raw('salesforce', 'account') }}
 ),
 
 renamed as (

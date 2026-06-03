@@ -1,0 +1,6 @@
+worker_id,email,first_name,last_name,department,cost_center,job_title,employment_status,hire_date,termination_date,fte,manager_id,_fivetran_synced
+WD001,alice@company.com,Alice,Engineer,Engineering,CC100,Software Engineer,Active,2022-01-15,,1.0,,2026-06-01 12:00:00
+WD002,bob@company.com,Bob,Analyst,Finance,CC200,Financial Analyst,Active,2021-06-01,,1.0,WD004,2026-06-01 12:00:00
+WD003,carol@company.com,Carol,Manager,Sales,CC300,Account Executive,Active,2020-03-10,,1.0,WD004,2026-06-01 12:00:00
+WD004,dan@company.com,Dan,Director,Operations,CC400,VP Operations,Active,2019-08-01,,1.0,,2026-06-01 12:00:00
+WD005,eve@company.com,Eve,Designer,Product,CC500,Product Designer,Terminated,2019-01-01,2026-04-30,1.0,WD004,2026-06-01 12:00:00

@@ -1,5 +1,5 @@
 with source as (
-    select * from {{ source('hubspot', 'contact') }}
+    select * from {{ atlas_raw('hubspot', 'contact') }}
 ),
 
 renamed as (

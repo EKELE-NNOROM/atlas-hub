@@ -17,6 +17,8 @@ Production-grade data platform for a rapidly growing SaaS company. Centralizes a
 
 ```
 atlas-hub/
+├── docker/                  # Dockerfiles and compose helpers
+├── docker-compose.yml       # Local dev stack
 ├── docs/                    # Business requirements, architecture, governance, runbooks
 ├── dbt/                     # ELT transformations + semantic metrics
 ├── airflow/                 # Orchestration DAGs
@@ -31,7 +33,29 @@ atlas-hub/
 
 ## Quick Start
 
-### Prerequisites
+### Option A: Docker (recommended for local dev)
+
+No Snowflake required for the default mock demo:
+
+```bash
+copy .env.example .env          # Windows
+# cp .env.example .env          # Mac/Linux
+
+docker compose up -d --build
+# Metrics API: http://localhost:8080/docs
+```
+
+If Docker build fails pulling from Docker Hub (`tls: error decoding message` / `bad record MAC`), use native mock mode:
+
+```powershell
+.\scripts\run-metrics-api-local.ps1
+```
+
+See [docs/docker/README.md](docs/docker/README.md) for dbt, Airflow, and Snowflake-connected modes.
+
+### Option B: Native install
+
+#### Prerequisites
 
 - Snowflake account with ACCOUNTADMIN (or delegated admin role)
 - AWS account (S3, Lambda, MWAA)
@@ -80,6 +104,7 @@ ARR, MRR, Revenue, Gross Margin, CAC, ROAS, Pipeline Value, Win Rate, DAU, MAU, 
 
 ## Documentation Index
 
+- [Docker Local Dev](docs/docker/README.md)
 - [Business Requirements](docs/business-requirements/README.md)
 - [Architecture](docs/architecture/README.md)
 - [Data Governance](docs/governance/README.md)
