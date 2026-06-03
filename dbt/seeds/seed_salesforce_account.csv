@@ -1,0 +1,4 @@
+id,name,industry,type,annual_revenue,number_of_employees,billing_country,created_date,last_modified_date,is_deleted,_fivetran_synced
+001ACC000000001,Acme Corp,Technology,Customer,5000000,120,US,2025-06-01,2026-05-01,false,2026-06-01 12:00:00
+001ACC000000002,Beta Inc,Software,Customer,1200000,45,US,2025-01-15,2026-05-15,false,2026-06-01 12:00:00
+001ACC000000003,Gamma LLC,Finance,Customer,8000000,200,UK,2024-03-01,2026-04-01,false,2026-06-01 12:00:00

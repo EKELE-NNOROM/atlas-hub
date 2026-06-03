@@ -1,0 +1,31 @@
+version: 2
+
+seeds:
+  - name: seed_stripe_subscription
+    description: Sample Stripe subscriptions (Fivetran-shaped columns). Used when `use_seeds=true`.
+    columns:
+      - name: id
+        tests: [not_null, unique]
+      - name: plan_amount
+        description: Plan amount in cents (see `cents_to_dollars` macro).
+
+  - name: seed_stripe_customer
+    description: Sample Stripe customers linked to Salesforce accounts via metadata JSON.
+
+  - name: seed_salesforce_account
+    description: Sample Salesforce accounts for finance and sales marts.
+
+  - name: seed_salesforce_opportunity
+    description: Mix of open pipeline and closed won/lost opportunities for win-rate mart.
+
+  - name: seed_hubspot_contact
+    description: Sample marketing contacts for funnel metrics.
+
+  - name: seed_workday_worker
+    description: Sample HR workers for headcount mart.
+
+  - name: seed_netsuite_transaction
+    description: Simplified income/COGS rows for gross margin mart.
+
+  - name: seed_product_events_daily_engagement
+    description: Sample DAU rows for product engagement mart.

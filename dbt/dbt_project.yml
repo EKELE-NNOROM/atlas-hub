@@ -18,6 +18,8 @@ clean-targets:
 vars:
   exclude_test_account_ids: ["001TEST000000001", "001TEST000000002"]
   fiscal_year_start_month: 1
+  # When true, staging reads CSV seeds instead of RAW Fivetran sources (dev without connectors).
+  use_seeds: false
 
 models:
   atlas_hub:
@@ -57,7 +59,8 @@ models:
 
 seeds:
   atlas_hub:
-    +schema: INT
+    +schema: SEED
+    +tags: ["seed"]
 
 snapshots:
   atlas_hub:

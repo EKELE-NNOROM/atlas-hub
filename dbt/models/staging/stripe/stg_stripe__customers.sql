@@ -1,5 +1,5 @@
 with source as (
-    select * from {{ source('stripe', 'customer') }}
+    select * from {{ atlas_raw('stripe', 'customer') }}
 ),
 
 renamed as (

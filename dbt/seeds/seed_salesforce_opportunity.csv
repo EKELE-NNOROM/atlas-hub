@@ -1,0 +1,5 @@
+id,account_id,name,stage_name,amount,probability,is_closed,is_won,close_date,created_date,owner_id,type,lead_source,is_deleted,_fivetran_synced
+006OPP000000001,001ACC000000001,Acme Expansion,Negotiation,250000,75,false,false,2026-07-15,2026-01-10,005USR001,New Business,Inbound,false,2026-06-01 12:00:00
+006OPP000000002,001ACC000000002,Beta Renewal,Closed Won,50000,100,true,true,2026-03-15,2025-12-01,005USR001,Renewal,Outbound,false,2026-06-01 12:00:00
+006OPP000000003,001ACC000000003,Gamma Platform,Closed Lost,100000,0,true,false,2026-02-28,2025-11-01,005USR002,New Business,Partner,false,2026-06-01 12:00:00
+006OPP000000004,001ACC000000001,Acme Upsell,Proposal,75000,50,false,false,2026-08-01,2026-04-01,005USR001,Upsell,Inbound,false,2026-06-01 12:00:00

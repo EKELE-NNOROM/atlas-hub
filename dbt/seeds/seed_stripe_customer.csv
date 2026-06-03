@@ -1,0 +1,4 @@
+id,email,name,metadata,created,_fivetran_synced
+cus_001,alice@acme.com,Acme Corp,"{""account_id"": ""001ACC000000001""}",2025-06-01 00:00:00,2026-06-01 12:00:00
+cus_002,bob@beta.com,Beta Inc,"{""account_id"": ""001ACC000000002""}",2025-01-15 00:00:00,2026-06-01 12:00:00
+cus_003,carol@gamma.com,Gamma LLC,"{""account_id"": ""001ACC000000003""}",2024-03-01 00:00:00,2026-06-01 12:00:00

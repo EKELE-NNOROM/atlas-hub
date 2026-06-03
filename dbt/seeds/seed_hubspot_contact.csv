@@ -1,0 +1,5 @@
+id,property_email,property_firstname,property_lastname,property_lifecyclestage,property_hs_lead_status,property_createdate,_fivetran_synced
+1001,lead1@example.com,Jane,Doe,marketingqualifiedlead,NEW,2026-03-15 10:00:00,2026-06-01 12:00:00
+1002,lead2@example.com,John,Smith,lead,OPEN,2026-04-20 14:30:00,2026-06-01 12:00:00
+1003,lead3@example.com,Pat,Lee,marketingqualifiedlead,IN_PROGRESS,2026-05-05 09:15:00,2026-06-01 12:00:00
+1004,lead4@example.com,Alex,Kim,customer,CUSTOMER,2025-11-01 08:00:00,2026-06-01 12:00:00

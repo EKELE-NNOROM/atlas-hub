@@ -3,7 +3,7 @@ with revenue as (
     select
         date_trunc('month', transaction_date)::date as revenue_month,
         sum(amount) as revenue_usd
-    from {{ source('netsuite', 'transaction') }}
+    from {{ atlas_raw('netsuite', 'transaction') }}
     where account_type = 'Income'
     group by 1
 ),
@@ -12,7 +12,7 @@ cogs as (
     select
         date_trunc('month', transaction_date)::date as revenue_month,
         sum(amount) as cogs_usd
-    from {{ source('netsuite', 'transaction') }}
+    from {{ atlas_raw('netsuite', 'transaction') }}
     where account_type = 'COGS'
     group by 1
 )

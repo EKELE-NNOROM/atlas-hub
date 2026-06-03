@@ -1,0 +1,4 @@
+id,customer_id,status,plan_amount,plan_interval,current_period_start,current_period_end,canceled_at,created,_fivetran_synced
+sub_001,cus_001,active,9900,month,2026-05-01 00:00:00,2026-06-01 00:00:00,,2025-06-01 00:00:00,2026-06-01 12:00:00
+sub_002,cus_002,active,24900,month,2026-05-01 00:00:00,2026-06-01 00:00:00,,2025-01-15 00:00:00,2026-06-01 12:00:00
+sub_003,cus_003,active,99000,year,2026-01-01 00:00:00,2027-01-01 00:00:00,,2024-03-01 00:00:00,2026-06-01 12:00:00

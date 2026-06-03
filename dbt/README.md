@@ -29,3 +29,15 @@ dbt deps && dbt build --target dev
 ```
 
 Or use Docker: [docs/docker/README.md](../docs/docker/README.md)
+
+## Dev without Fivetran (sample seeds)
+
+Sample CSV seeds live in [`seeds/`](seeds/). They let you materialize marts and semantic models on Snowflake without connectors:
+
+```powershell
+cd dbt
+dbt deps
+dbt build --vars "{use_seeds: true}" --target dev
+```
+
+See [seeds/README.md](seeds/README.md) for file list, prerequisites, and verification queries.
